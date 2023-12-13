@@ -55,13 +55,13 @@ end
 ---@param Int32 hash 
 ---@param? Int32 amount 
 function TransactionManager:TriggerTransaction(hash, amount)
-    globals.set_int(4536533 + 1, 2147483646)
-    globals.set_int(4536533 + 7, 2147483647)
-    globals.set_int(4536533 + 6, 0)
-    globals.set_int(4536533 + 5, 0)
-    globals.set_int(4536533 + 3, hash)
-    globals.set_int(4536533 + 2, amount or self:GetPrice(hash, 0x57DE404E))
-    globals.set_int(4536533, 1)
+    globals.set_int(4537212 + 1, 2147483646)
+    globals.set_int(4537212 + 7, 2147483647)
+    globals.set_int(4537212 + 6, 0)
+    globals.set_int(4537212 + 5, 0)
+    globals.set_int(4537212 + 3, hash)
+    globals.set_int(4537212 + 2, amount or self:GetPrice(hash, 0x57DE404E))
+    globals.set_int(4537212, 1)
 end
 
 function TransactionManager:Init()
