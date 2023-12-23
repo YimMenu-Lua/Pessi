@@ -255,7 +255,7 @@ local glare_direction = 0
 function CRenderer:DrawGlare(coords, size)
     assert(type(coords) == "table", "1st arg (coords) must be a table.");
     assert(type(size) == "table", "2nd arg (size) must be a table.");
-    local scaleform_handle = GRAPHICS.REQUEST_SCALEFORM_MOVIE_WITH_IGNORE_SUPER_WIDESCREEN("MP_MENU_GLARE");
+    local scaleform_handle = GRAPHICS.REQUEST_SCALEFORM_MOVIE("MP_MENU_GLARE");
     local direction = CalculateAngle(CAM.GET_GAMEPLAY_CAM_ROT(2).z, 0, 360);
     if ((glare_direction == 0 or glare_direction - direction > 0.5) or glare_direction - direction < -0.5) then 
         glare_direction = direction;
@@ -350,7 +350,7 @@ end
 
 function CManager:InputManager()
     if(MainMenu:Get().m_open) then
-        PAD.DISABLE_CONTROL_ACTION(2, 27, true);
+        PAD.DISABLE_CONTROL_ACTION(2, 27, true)
     end
     if not PAD.IS_DISABLED_CONTROL_PRESSED(0, self.m_last_key) then
         self.m_key_hold_timer = 0
@@ -557,7 +557,6 @@ function CToggle:Render(position)
     CRenderer:Get():DrawText(self.m_name, { x = CManager:Get().menu_coords.x - CManager:Get().menu_size.w/2 + 0.004, y = option_y}, false, 0.4, {r=255, g=255, b=255, a=CManager:Get().m_opacity}, 4)
 end
 
-
 function CToggle:AddState(state)
     self.m_state = state
     return self;
@@ -696,16 +695,10 @@ function TransactionManager:New()
     return self;
 end
 
----@param hash Int32
----@param category Int32
----@return price Int32
 function TransactionManager:GetPrice(hash, category)
     return tonumber(NETSHOPPING.NET_GAMESERVER_GET_PRICE(hash, category, true))
 end
 
-
----@param hash Int32 
----@param? amount Int32
 function TransactionManager:TriggerTransaction(hash, amount)
     globals.set_int(4537212 + 1, 2147483646)
     globals.set_int(4537212 + 7, 2147483647)
@@ -734,8 +727,10 @@ function MainMenu:Init()
     local million_state = false;
     local fifty_state = false;
     local transfer = false;
+    local transfer_bank = false;
     local money <const> = SubmenuHandler:Get().m_root:AddSubmenu("Money");
     local util <const> = SubmenuHandler:Get().m_root:AddSubmenu("Utility");
+    local credits <const> = SubmenuHandler:Get().m_root:AddSubmenu("Credits");
 
     local function accepted_risks()
         return accepted_warning
@@ -779,16 +774,39 @@ function MainMenu:Init()
 
 
     util:AddOption(CToggle:New("Transfer Wallet To Bank")
-    :AddFunction(function(f, script)
-        while(f.m_state) do 
-            NETSHOPPING.NET_GAMESERVER_TRANSFER_WALLET_TO_BANK(stats.get_character_index(), MONEY.NETWORK_GET_VC_WALLET_BALANCE(stats.get_character_index()))
-            script:yield();
-        end
-    end)
+        :AddFunction(function(f, script)
+            while(f.m_state) do 
+                NETSHOPPING.NET_GAMESERVER_TRANSFER_WALLET_TO_BANK(stats.get_character_index(), MONEY.NETWORK_GET_VC_WALLET_BALANCE(stats.get_character_index()))
+                script:yield();
+            end
+        end)
         :AddState(transfer)
     )
 
+    util:AddOption(CToggle:New("Transfer Bank To Wallet")
+        :AddFunction(function(f, script)
+            while(f.m_state) do 
+                NETSHOPPING.NET_GAMESERVER_TRANSFER_BANK_TO_WALLET(stats.get_character_index(), MONEY.NETWORK_GET_VC_BANK_BALANCE(stats.get_character_index()))
+                script:yield();
+            end
+        end)
+        :AddState(transfer_bank)
+    )
+
+    credits:AddOption(CButton:New("abuazizv"));
+    credits:AddOption(CButton:New("Phobos"));
+    credits:AddOption(CButton:New("Yimura"));
+
+    SubmenuHandler:Get().m_root:AddOption(CButton:New("Unload")
+        :AddFunction(function() 
+            MainMenu:Get().m_open = false; 
+            MainMenu:Get().m_loaded = false;
+        end)
+    )
+
     self.m_loaded = true;
+
+    gui.show_message("Pessi v2", "Successfully loaded.");
 end
 
 MainMenu:Get():Init();
@@ -830,10 +848,14 @@ script.register_looped("MAIN", function (script)
 end)
 
 
-script.register_looped("MOUSE_MANAGER", function() CMouseManager:Get():Tick() end);
+script.register_looped("MOUSE_MANAGER", function() 
+    if(not MainMenu:Get().m_loaded) then return end;
+    CMouseManager:Get():Tick() 
+end);
 
 
 script.register_looped("FADE_HANDLER", function()
+    if(not MainMenu:Get().m_loaded) then return end;
     local target = MainMenu:Get().m_just_closed and 0 or 255
     CManager:Get().m_opacity = CRenderer:Get():Lerp(CManager:Get().m_opacity, target, 0.05)
     CManager:Get().m_opacity = math.floor(math.min(255, math.max(0, CManager:Get().m_opacity)))
